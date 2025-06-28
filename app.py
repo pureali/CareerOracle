@@ -1003,8 +1003,20 @@ def main_page():
                 # Check if game has been completed for this role
                 game_key = f"game_completed_{i}"
                 if game_key in st.session_state and st.session_state[game_key]:
-                    # Show completed game results
-                    show_game_results(i, job)
+                    # Show completed game indicator
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border: 1px solid #c3e6cb; border-radius: 10px; padding: 1rem; margin: 1rem 0; text-align: center;">
+                        <h4 style="color: #155724; margin-bottom: 0.5rem;">✅ Oracle's Trial Completed</h4>
+                        <p style="color: #155724; margin: 0;">You have completed the mystical trials for this role. Click below to view your results.</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    col1, col2, col3 = st.columns([1, 2, 1])
+                    with col2:
+                        if st.button(f"🔮 View Oracle's Revelation for {job['title']}", key=f"view_results_{i}"):
+                            st.session_state.current_page = 'game'
+                            st.session_state.selected_role_index = i
+                            st.rerun()
                 else:
                     # Show start game button
                     col1, col2, col3 = st.columns([1, 2, 1])
@@ -1066,6 +1078,11 @@ def game_page():
         st.session_state[current_q_key] = 0
     if scores_key not in st.session_state:
         st.session_state[scores_key] = []
+    
+    # Check if game is completed and show results
+    if f'game_completed_{i}' in st.session_state and st.session_state[f'game_completed_{i}']:
+        show_game_results_on_game_page(i, job)
+        return
     
     # Start game button
     if not st.session_state[game_key]:
@@ -1139,19 +1156,8 @@ def game_page():
             }
             st.session_state[f'game_completed_{i}'] = True
             
-            # Display completion message
-            st.markdown("""
-            <div style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-radius: 20px; padding: 3rem; margin: 2rem 0; text-align: center; box-shadow: 0 8px 32px rgba(40, 167, 69, 0.3);">
-                <h2 style="color: #155724; margin-bottom: 1rem;">🎉 Oracle's Trial Complete!</h2>
-                <p style="color: #155724; font-size: 1.2rem;">Your destiny has been revealed. Return to the main page to see your results.</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                if st.button("🔮 Return to Prophecies"):
-                    st.session_state.current_page = 'main'
-                    st.rerun()
+            # Show results on the same page
+            show_game_results_on_game_page(i, job)
         
         else:
             # Show current question
@@ -1266,8 +1272,8 @@ def game_page():
             psychology_count = sum(1 for q in questions if q.get('type') == 'PSYCHOLOGY')
             st.markdown(f"*⚙️ Technical Trials: {technical_count} | 🧠 Psychology Trials: {psychology_count}*")
 
-def show_game_results(i, job):
-    """Display completed game results on main page"""
+def show_game_results_on_game_page(i, job):
+    """Display completed game results on the game page"""
     if f'game_results_{i}' not in st.session_state:
         return
     
@@ -1354,17 +1360,63 @@ def show_game_results(i, job):
     </div>
     """, unsafe_allow_html=True)
     
-    # Retry button
-    if st.button(f"🔮 Retry Oracle's Trial for {job['title']}", key=f"retry_{i}"):
-        st.session_state[f'game_completed_{i}'] = False
-        st.session_state[f'game_started_{i}'] = False
-        st.session_state[f'current_question_{i}'] = 0
-        st.session_state[f'game_scores_{i}'] = []
-        if f'game_results_{i}' in st.session_state:
-            del st.session_state[f'game_results_{i}']
-        if f'questions_{i}' in st.session_state:
-            del st.session_state[f'questions_{i}']
-        st.rerun()
+    # Action buttons
+    col1, col2, col3 = st.columns([1, 1, 1])
+    
+    with col1:
+        if st.button("🔮 Retry Oracle's Trial", key=f"retry_{i}"):
+            st.session_state[f'game_completed_{i}'] = False
+            st.session_state[f'game_started_{i}'] = False
+            st.session_state[f'current_question_{i}'] = 0
+            st.session_state[f'game_scores_{i}'] = []
+            if f'game_results_{i}' in st.session_state:
+                del st.session_state[f'game_results_{i}']
+            if f'questions_{i}' in st.session_state:
+                del st.session_state[f'questions_{i}']
+            st.rerun()
+    
+    with col2:
+        if st.button("🔮 Try Another Role", key=f"try_another_{i}"):
+            st.session_state.current_page = 'main'
+            st.rerun()
+    
+    with col3:
+        if st.button("🔮 Download Results", key=f"download_{i}"):
+            # Create a simple text report
+            report = f"""
+🔮 CareerOracle - Oracle's Final Revelation
+==========================================
+
+Role: {job['title']}
+Personality Type: {st.session_state.personality_type}
+
+📊 SCORES:
+- Overall Destiny: {final_score:.1f}/10 ({get_score_label(final_score)})
+- Technical Mastery: {technical_avg:.1f}/10 ({get_score_label(technical_avg)})
+- Psychological Alignment: {psychology_avg:.1f}/10 ({get_score_label(psychology_avg)})
+
+🔮 ORACLE'S FINAL WORDS:
+{final_assessment['overall_assessment']}
+
+✨ ORACLE'S BLESSINGS:
+{chr(10).join([f"- {strength}" for strength in final_assessment['strengths']])}
+
+🔮 PATH TO ENLIGHTENMENT:
+{chr(10).join([f"- {improvement}" for improvement in final_assessment['improvements']])}
+
+🌟 ORACLE'S CAREER VERDICT:
+{final_assessment['career_recommendation']}
+
+Generated by CareerOracle - The Mystical Career Advisor
+            """
+            
+            st.download_button(
+                label="📄 Download Report",
+                data=report,
+                file_name=f"career_oracle_report_{job['title'].replace(' ', '_')}.txt",
+                mime="text/plain",
+                key=f"download_report_{i}"
+            )
 
 # Main app logic
 def main():

@@ -6,12 +6,13 @@ import json
 import time
 import PyPDF2
 import io
+import interview
 
 # Load environment variables
 load_dotenv()
 
 # Configure OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Page configuration
 st.set_page_config(
@@ -28,6 +29,8 @@ if 'selected_role_index' not in st.session_state:
     st.session_state.selected_role_index = None
 if 'game_data' not in st.session_state:
     st.session_state.game_data = {}
+if 'interview_data' not in st.session_state:
+    st.session_state.interview_data = {}
 
 # Custom CSS for better styling
 st.markdown("""
@@ -253,7 +256,7 @@ def generate_job_recommendations(cv_text, personality_type):
     """
     
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a career advisor analyzing CVs and personality types to recommend suitable job roles."},
@@ -328,7 +331,7 @@ def generate_job_roles(personality_type, cv_content):
     """
     
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a career advisor specializing in matching personality types and backgrounds with suitable job roles."},
@@ -372,7 +375,7 @@ def experience_job_role(job_title, job_description, personality_type):
     """
     
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are an immersive career simulation expert. Create engaging, realistic job role experiences."},
@@ -431,7 +434,7 @@ def generate_role_score(job_title, job_description, personality_type, experience
     """
     
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a career assessment expert who provides objective, data-driven evaluations of job roles."},
@@ -515,7 +518,7 @@ def generate_role_questions(job_title, job_description, personality_type):
     """
     
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a career assessment expert creating role-specific technical and psychology questions for job evaluation."},
@@ -763,7 +766,7 @@ def evaluate_answer(question, selected_option, job_title, personality_type):
     """
     
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a career assessment expert evaluating candidate responses for job suitability."},
@@ -838,7 +841,7 @@ def generate_final_assessment(job_title, scores, technical_avg, psychology_avg, 
     """
     
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a mystical career oracle providing final assessments with technical and psychology insights."},
@@ -1002,6 +1005,8 @@ def main_page():
                 
                 # Check if game has been completed for this role
                 game_key = f"game_completed_{i}"
+                interview_key = f"interview_completed_{i}"
+                
                 if game_key in st.session_state and st.session_state[game_key]:
                     # Show completed game indicator
                     st.markdown(f"""
@@ -1017,11 +1022,54 @@ def main_page():
                             st.session_state.current_page = 'game'
                             st.session_state.selected_role_index = i
                             st.rerun()
-                else:
-                    # Show start game button
+                
+                if interview_key in st.session_state and st.session_state[interview_key]:
+                    # Show completed interview indicator
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border: 1px solid #bee5eb; border-radius: 10px; padding: 1rem; margin: 1rem 0; text-align: center;">
+                        <h4 style="color: #0c5460; margin-bottom: 0.5rem;">✅ Professional Interview Completed</h4>
+                        <p style="color: #0c5460; margin: 0;">You have completed the professional interview for this role. Click below to view your results.</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
                     col1, col2, col3 = st.columns([1, 2, 1])
                     with col2:
-                        if st.button(f"🔮 Begin Oracle's Trial for {job['title']}", key=f"start_game_{i}"):
+                        if st.button(f"🎤 View Interview Results for {job['title']}", key=f"view_interview_{i}"):
+                            st.session_state.current_page = 'interview'
+                            st.session_state.selected_role_index = i
+                            st.rerun()
+                
+                # Show action buttons
+                if (game_key not in st.session_state or not st.session_state[game_key]) and (interview_key not in st.session_state or not st.session_state[interview_key]):
+                    # Both trials available
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        if st.button(f"🔮 Oracle's Trial for {job['title']}", key=f"start_game_{i}"):
+                            st.session_state.current_page = 'game'
+                            st.session_state.selected_role_index = i
+                            st.rerun()
+                    
+                    with col2:
+                        if st.button(f"🎤 Professional Interview for {job['title']}", key=f"start_interview_{i}"):
+                            st.session_state.current_page = 'interview'
+                            st.session_state.selected_role_index = i
+                            st.rerun()
+                
+                elif game_key in st.session_state and st.session_state[game_key] and (interview_key not in st.session_state or not st.session_state[interview_key]):
+                    # Only interview available
+                    col1, col2, col3 = st.columns([1, 2, 1])
+                    with col2:
+                        if st.button(f"🎤 Professional Interview for {job['title']}", key=f"start_interview_{i}"):
+                            st.session_state.current_page = 'interview'
+                            st.session_state.selected_role_index = i
+                            st.rerun()
+                
+                elif interview_key in st.session_state and st.session_state[interview_key] and (game_key not in st.session_state or not st.session_state[game_key]):
+                    # Only Oracle's trial available
+                    col1, col2, col3 = st.columns([1, 2, 1])
+                    with col2:
+                        if st.button(f"🔮 Oracle's Trial for {job['title']}", key=f"start_game_{i}"):
                             st.session_state.current_page = 'game'
                             st.session_state.selected_role_index = i
                             st.rerun()
@@ -1423,6 +1471,8 @@ def main():
     # Page navigation
     if st.session_state.current_page == 'game':
         game_page()
+    elif st.session_state.current_page == 'interview':
+        interview.interview_page()
     else:
         main_page()
 

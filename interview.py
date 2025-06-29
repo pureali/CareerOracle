@@ -396,9 +396,9 @@ def interview_page():
             # Show introduction for first question
             if current_q == 0:
                 st.markdown("""
-                <div style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%); border-radius: 15px; padding: 2rem; margin: 1rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h3 style="color: white; margin-bottom: 1rem;">🎤 Interview Introduction</h3>
-                    <p style="color: rgba(255,255,255,0.9); line-height: 1.6;">{}</p>
+                <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 15px; padding: 2rem; margin: 1rem 0; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3 style="color: #1565c0; margin-bottom: 1rem;">🎤 Interview Introduction</h3>
+                    <p style="color: #1976d2; line-height: 1.6;">{}</p>
                 </div>
                 """.format(st.session_state[intro_key]), unsafe_allow_html=True)
             

@@ -1,0 +1,11 @@
+{
+  "name": "careeroracle",
+  "version": "1.0.0",
+  "description": "CareerOracle - Mystical Career Advisor",
+  "scripts": {
+    "build": "echo 'Building Streamlit app for deployment' && mkdir -p dist && cp -r . dist/ && echo 'Build complete'",
+    "start": "streamlit run app.py --server.port 8501"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

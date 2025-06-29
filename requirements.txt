@@ -8,4 +8,4 @@ pydub==0.25.1
 soundfile==0.12.1
 beautifulsoup4==4.12.2
 google-cloud-texttospeech==2.27.0
-google-cloud-speech==2.33.0 
+google-cloud-speech==2.33.0
